@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Orçamento - Comercial Batista</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<style>
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background:#e6e6e6;
+  padding:10px;
+}
+
+#orcamento {
+  background:white;
+  padding:30px;
+  max-width:900px;
+  margin:auto;
+  box-shadow:0 0 20px rgba(0,0,0,0.2);
+}
+
+/* FAIXA AZUL DA LOGO */
+.faixa-logo {
+  background:#0b4fa3;
+  padding:15px 0;
+  text-align:center;
+  margin-bottom:15px;
+}
+
+.logo img { 
+  max-width:250px; 
+  background:white;
+  padding:6px;
+  border-radius:6px;
+}
+
+h2 { text-align:center; letter-spacing:4px; }
+
+.top-info {
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:10px;
+  font-weight:bold;
+}
+
+.dados {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:10px;
+}
+
+label { font-size:13px; font-weight:bold; }
+
+input, select, textarea {
+  width:100%;
+  padding:7px;
+  border:1px solid #ccc;
+  border-radius:5px;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:15px;
+}
+
+th {
+  background:#0b4fa3;
+  color:white;
+  padding:8px;
+}
+
+td {
+  border:1px solid #ccc;
+  padding:6px;
+  text-align:center;
+}
+
+.remove-btn {
+  background:#c00000;
+  color:white;
+  border:none;
+  padding:4px 8px;
+  cursor:pointer;
+}
+
+.box-valores {
+  margin-top:20px;
+  border:1px solid #ccc;
+  padding:15px;
+  background:#f1f6ff;
+}
+
+.linha-valor {
+  display:flex;
+  justify-content:space-between;
+  margin:6px 0;
+  font-size:16px;
+}
+
+.linha-valor strong { color:#0b4fa3; }
+
+button {
+  width:100%;
+  padding:12px;
+  margin-top:10px;
+  background:#c00000;
+  color:white;
+  border:none;
+  border-radius:6px;
+  font-size:16px;
+  cursor:pointer;
+}
+
+footer {
+  text-align:center;
+  margin-top:25px;
+  font-size:14px;
+  font-weight:bold;
+}
+
+/* ESCONDER NA IMPRESSÃO */
+@media print {
+  .nao-imprimir {
+    display:none;
+  }
+  input, select, textarea { border:none; }
+}
+</style>
+</head>
+
+<body>
+
+<div id="orcamento">
+
+<div class="faixa-logo">
+  <input type="file" accept="image/*" onchange="carregarLogo(event)" class="nao-imprimir">
+  <br><br>
+  <div class="logo">
+    <img id="logoPreview">
+  </div>
+</div>
+
+<h2>ORÇAMENTO</h2>
+
+<div class="top-info">
+  <div>Nº: <span id="numeroOrcamento"></span></div>
+  <div>Data: <input type="date"></div>
+</div>
+
+<div class="dados">
+  <div>
+    <label>Cliente</label>
+    <input>
+  </div>
+  <div>
+    <label>Cidade</label>
+    <input>
+  </div>
+</div>
+
+<table id="tabela">
+<tr>
+  <th>Produto / Serviço</th>
+  <th>Qtd</th>
+  <th>Valor Unitário</th>
+  <th>Total R$</th>
+  <th class="nao-imprimir">Ação</th>
+</tr>
+</table>
+
+<button onclick="adicionarLinha()" class="nao-imprimir">➕ Adicionar Produto</button>
+
+<div class="box-valores">
+
+  <div class="linha-valor">
+    <span>Total no cartão:</span>
+    <strong id="totalCartao">R$ 0,00</strong>
+  </div>
+
+  <div class="linha-valor nao-imprimir">
+    <span>Parcelas:</span>
+    <select id="parcelas" onchange="calcular()">
+      <option value="1">1x</option>
+      <option value="2">2x</option>
+      <option value="3">3x</option>
+      <option value="4">4x</option>
+      <option value="5">5x</option>
+      <option value="6">6x</option>
+      <option value="7">7x</option>
+      <option value="8">8x</option>
+      <option value="9">9x</option>
+      <option value="10">10x</option>
+    </select>
+  </div>
+
+  <div class="linha-valor">
+    <span>Parcelamento:</span>
+    <strong id="valorParcela">R$ 0,00</strong>
+  </div>
+
+  <hr>
+
+  <div class="linha-valor nao-imprimir">
+    <span>Desconto (%):</span>
+    <input type="number" id="descontoPercent" value="0" oninput="calcular()">
+  </div>
+
+  <div class="linha-valor">
+    <span>Total à vista com desconto:</span>
+    <strong id="totalDesconto">R$ 0,00</strong>
+  </div>
+
+</div>
+
+<div style="margin-top:15px;">
+  <label>Observações:</label>
+  <textarea rows="3"></textarea>
+</div>
+
+<button onclick="window.print()" class="nao-imprimir">💾 Salvar em PDF</button>
+<button onclick="gerarImagem()" class="nao-imprimir">🖼️ Salvar em JPEG</button>
+
+<footer>
+Fernando Rocha<br>
+📞 (81) 99754-4647
+</footer>
+
+</div>
+
+<script>
+function gerarNumero() {
+  document.getElementById("numeroOrcamento").innerText =
+    Math.floor(Math.random() * 90000) + 10000;
+}
+gerarNumero();
+
+function carregarLogo(event) {
+  document.getElementById("logoPreview").src =
+    URL.createObjectURL(event.target.files[0]);
+}
+
+function adicionarLinha() {
+  let t = document.getElementById("tabela");
+  let r = t.insertRow();
+  r.insertCell(0).innerHTML = "<input>";
+  r.insertCell(1).innerHTML = "<input type='number' oninput='calcular()'>";
+  r.insertCell(2).innerHTML = "<input type='number' step='0.01' oninput='calcular()'>";
+  r.insertCell(3).innerHTML = "R$ 0,00";
+  r.insertCell(4).innerHTML = "<button class='remove-btn nao-imprimir' onclick='removerLinha(this)'>X</button>";
+}
+
+function removerLinha(btn) {
+  let row = btn.parentNode.parentNode;
+  row.parentNode.removeChild(row);
+  calcular();
+}
+
+function calcular() {
+  let t = document.getElementById("tabela");
+  let total = 0;
+
+  for (let i = 1; i < t.rows.length; i++) {
+    let q = t.rows[i].cells[1].children[0].value || 0;
+    let v = t.rows[i].cells[2].children[0].value || 0;
+    let sub = q * v;
+    t.rows[i].cells[3].innerHTML = "R$ " + sub.toFixed(2);
+    total += sub;
+  }
+
+  let parcelas = document.getElementById("parcelas").value;
+  let desconto = document.getElementById("descontoPercent").value || 0;
+
+  let valorParcela = total / parcelas;
+  let totalDesconto = total - (total * desconto / 100);
+
+  document.getElementById("totalCartao").innerText =
+    "R$ " + total.toFixed(2);
+
+  document.getElementById("valorParcela").innerText =
+    parcelas + "x de R$ " + valorParcela.toFixed(2);
+
+  document.getElementById("totalDesconto").innerText =
+    "R$ " + totalDesconto.toFixed(2);
+}
+
+function gerarImagem() {
+  document.querySelectorAll(".nao-imprimir").forEach(el => el.style.display = "none");
+
+  html2canvas(document.getElementById("orcamento")).then(canvas => {
+    let a = document.createElement("a");
+    a.href = canvas.toDataURL("image/jpeg");
+    a.download = "orcamento.jpg";
+    a.click();
+
+    document.querySelectorAll(".nao-imprimir").forEach(el => el.style.display = "");
+  });
+}
+</script>
+
+</body>
+</html>
